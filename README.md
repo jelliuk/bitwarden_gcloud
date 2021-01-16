@@ -32,7 +32,7 @@ Go to [Google Compute Engine](https://cloud.google.com/compute) and open a Cloud
 ```bash
 $ gcloud compute instances create bitwarden \
     --machine-type f1-micro \
-    --zone us-south1-b \
+    --zone us-east1-b \
     --image-project cos-cloud \
     --image-family cos-stable \
     --boot-disk-size=30GB \
@@ -168,7 +168,7 @@ gcloud compute resource-policies create snapshot-schedule Bitwarden-RS-WeeklySna
     --max-retention-days 7 \
     --start-time 01:00 \
     --weekly-schedule saturday \
-    --region us-south1 \
+    --region us-east1 \
     --on-source-disk-delete apply-retention-policy \
     --snapshot-labels env=dev,media=images \
     --storage-location US
