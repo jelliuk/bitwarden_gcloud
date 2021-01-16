@@ -32,12 +32,12 @@ Go to [Google Compute Engine](https://cloud.google.com/compute) and open a Cloud
 ```bash
 $ gcloud compute instances create bitwarden \
     --machine-type f1-micro \
-    --zone us-central1-a \
+    --zone us-south1-b \
     --image-project cos-cloud \
     --image-family cos-stable \
     --boot-disk-size=30GB \
     --tags http-server,https-server \
-    --scopes compute-ro
+    --scopes compute-rw
 ```
 
 You may change the zone to be closer to you or customize the name (`bitwarden`), but most of the other values should remain the same. 
@@ -47,7 +47,7 @@ You may change the zone to be closer to you or customize the name (`bitwarden`),
 Enter a shell on the new instance and clone this repo:
 
 ```bash
-$ git clone https://github.com/dadatuputi/bitwarden_gcloud.git
+$ git clone https://github.com/jelliuk/bitwarden_gcloud.git
 $ cd bitwarden_gcloud
 ```
 
@@ -57,7 +57,7 @@ Set up the docker-compose alias by using the included script:
 $ sh utilities/install-alias.sh
 $ source ~/.bashrc
 $ docker-compose --version
-docker-compose version 1.25.5, build 8a1c60f
+docker-compose version x.y.z, build abc
 ```
 
 ### Configure Environmental Variables with `.env`
@@ -69,8 +69,8 @@ I provide `.env.template` which should be copied to `.env` and filled out; filli
 `fail2ban` stops brute-force attempts at your vault. To configure how long a ban is and how many attempts will trigger a ban, edit `fail2ban/jail.d/jail.local`:
 
 ```conf
-bantime = 6h <- how long to enforce the ip ban
-maxretry = 5  <- number of times to retry until a ban occurs
+bantime = 24h <- how long to enforce the ip ban
+maxretry = 3  <- number of times to retry until a ban occurs
 ```
 
 This will work out of the box - no `fail2ban` configuration is needed unless you want e-mail alerts of bans. To enable this, enter the SMTP settings in `.env`, and follow the instructions in `fail2ban/jail.d/jail.local` by uncommenting and entering `destemail` and `sender` and uncommenting the `action_mwl` action in the `bitwarden` and `bitwarden-admin` jails in the same file.
@@ -89,7 +89,7 @@ Container-Optimized OS will automatically update itself, but the update will onl
 
 Before you start, ensure you have `compute-rw` scope for your bitwarden compute vm. If you used the `gcloud` command above, it includes that scope. If not, go to your Google Cloud console and edit the "Cloud API access scopes" to have "Compute Engine" show "Read Write". You need to shut down your compute vm in order to change this.
 
-Modify the script to set your local timezone and the time to schedule reboots: set the `TZ=` and `TIME=` variables in `utilities/reboot-on-update.sh`. By default the script will schedule reboots for 06:00 UTC. 
+Modify the script to set your local timezone and the time to schedule reboots: set the `TZ=` and `TIME=` variables in `utilities/reboot-on-update.sh`. By default the script will schedule reboots for 04:00 UTC. 
 
 From within your compute vm console, type the command `toolbox`. From within `toolbox`, find the `utilities` folder within `bitwarden_gcloud`. `toolbox` mounts the host filesystem under `/media/root`, so go there to find the folder. It will likely be in `/media/root/home/<google account name>/bitwarden_gcloud/utilities` - `cd` to that folder.
 
@@ -109,12 +109,67 @@ $ sudo journalctl -u google-startup-scripts.service
 
 Now the script will wait until a reboot is pending and then schedule a reboot for the time configured in the script.
 
-## Step 3: Start Services
 
-To start up, use `docker-compose`:
+## Step 3: Update DNS within CloudFlare
+
+Login to CloudFlare Control Panel and add an A Record for your chosen FQDN for the service with the External IP Address within Google Control Panel.
+
+https://dash.cloudflare.com/
+
+Perform ping <FQDN> with your local computer and ensure that the returned IP Address is the same as External IP Address within Google Control Panel.
+
+## Step 4: Start Services
+
+Ensure you are in the necessary location and to start up, use `docker-compose`:
 
 ```bash
+cd bitwarden_gcloud
 $ docker-compose up
 ```
 
 You can now use your browser to visit your new Bitwarden site. 
+
+## Step 5: Update DDclient Config
+
+Ensure you are in the necessary location and edit the DDclient Config to auto-update the DNS Record you have created.
+
+```bash
+cd bitwarden_gcloud
+$ nano DDclient/ddclient.conf
+```
+
+Uncomment the following line:
+
+```
+use=web, web=checkip.dyndns.org/, web-skip='IP Address'
+```
+
+Below details provided below as guidance for CloudFlare:
+
+```
+##
+## CloudFlare (www.cloudflare.com)
+##
+protocol=cloudflare,        \
+zone=<TLD>,      \
+ttl=1,                      \
+login=<CloudFlare Login - Email Address>,     \
+password=<Global API>  \
+<FQDN as defined in the .env file>
+```
+
+## Step 6: Create Weekly Snapshot Schedule to protect VM
+
+In the Cloud Shell enter the following command (NOT YET TESTED)
+
+```
+gcloud compute resource-policies create snapshot-schedule Bitwarden-RS-WeeklySnapshot \
+    --description "Weekly Snapshot for Bitwarden-RS VM" \
+    --max-retention-days 7 \
+    --start-time 01:00 \
+    --weekly-schedule saturday \
+    --region us-south1 \
+    --on-source-disk-delete apply-retention-policy \
+    --snapshot-labels env=dev,media=images \
+    --storage-location US
+```
