@@ -81,7 +81,7 @@ The `countryblock` container will block ip addresses from countries specified in
 
 This country-wide blocklist will be updated daily at midnight, but you can change the `COUNTRYBLOCK_SCHEDULE` variable in `.env` to suit your needs. 
 
-These block-lists are pulled from <www.ipdeny.com> on each update. 
+These block-lists are pulled from www.ipdeny.com on each update. 
 
 ### Configure Automatic Rebooting After Updates (_optional_)
 
@@ -89,7 +89,7 @@ Container-Optimized OS will automatically update itself, but the update will onl
 
 Before you start, ensure you have `compute-rw` scope for your bitwarden compute vm. If you used the `gcloud` command above, it includes that scope. If not, go to your Google Cloud console and edit the "Cloud API access scopes" to have "Compute Engine" show "Read Write". You need to shut down your compute vm in order to change this.
 
-Modify the script to set your local timezone and the time to schedule reboots: set the `TZ=` and `TIME=` variables in `utilities/reboot-on-update.sh`. By default the script will schedule reboots for 04:00 UTC. 
+Modify the script to set your local timezone and the time to schedule reboots: set the `TZ=` and `TIME=` variables in `utilities/reboot-on-update.sh`. By default the script will schedule reboots for 05:00 GMT. 
 
 From within your compute vm console, type the command `toolbox`. From within `toolbox`, find the `utilities` folder within `bitwarden_gcloud`. `toolbox` mounts the host filesystem under `/media/root`, so go there to find the folder. It will likely be in `/media/root/home/<google account name>/bitwarden_gcloud/utilities` - `cd` to that folder.
 
@@ -108,7 +108,6 @@ $ sudo journalctl -u google-startup-scripts.service
 ```
 
 Now the script will wait until a reboot is pending and then schedule a reboot for the time configured in the script.
-
 
 ## Step 3: Update DNS within CloudFlare
 
@@ -144,7 +143,7 @@ Uncomment the following line:
 use=web, web=checkip.dyndns.org/, web-skip='IP Address'
 ```
 
-Below details provided below as guidance for CloudFlare:
+The below details provided below as guidance for CloudFlare:
 
 ```
 ##
@@ -157,6 +156,26 @@ login=<CloudFlare Login - Email Address>,     \
 password=<Global API>  \
 <FQDN as defined in the .env file>
 ```
+
+To validate the configuration, confirm the DDclient name:
+
+```
+docker container ls
+```
+This should return an output similar to the below:
+
+CONTAINER ID        IMAGE                       COMMAND                  CREATED             STATUS   
+<Container ID>        linuxserver/ddclient        "/init"                  7 hours ago         Up
+
+Obtain the latest log entry using the container ID you found:
+
+```
+docker container logs <Container ID>
+```
+
+You'll see the following message if everything is working:
+
+SUCCESS:  <FQDN> -- Updated Successfully to <External IP Address>
 
 ## Step 6: Create Weekly Snapshot Schedule to protect VM
 
