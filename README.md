@@ -6,6 +6,8 @@ Bitwarden installation optimized for Google Cloud's 'always free' f1-micro compu
 
 This is a quick-start guide. Read about this project in more detail [here](https://bradford.la/2020/self-host-bitwarden-on-google-cloud).
 
+Originally Forked from excellent work by [dadatuputi](https://github.com/dadatuputi/bitwarden_gcloud)
+
 ---
 
 ## Features
@@ -27,10 +29,12 @@ Before you start, ensure you have the following:
 
 Google Cloud offers an '[always free](https://cloud.google.com/free/)' tier of their Compute Engine with one virtual core and ~600 MB of RAM (about 150 MB free depending on which OS you installed). [Bitwarden RS](https://github.com/dani-garcia/bitwarden_rs) runs well under these constraints; it's written in Rust and an ideal candidate for a micro instance. 
 
-Go to [Google Compute Engine](https://cloud.google.com/compute) and open a Cloud Shell. You may also create the instance manually following [the constraints of the free tier](https://cloud.google.com/free/docs/gcp-free-tier). In the Cloud Shell enter the following command to build the properly spec'd machine: 
+Go to [Google Compute Engine](https://cloud.google.com/compute) and open a Cloud Shell. You may also create the instance manually following [the constraints of the free tier](https://cloud.google.com/free/docs/gcp-free-tier). 
+
+In the Cloud Shell enter the following command to build the properly spec'd machine: 
 
 ```bash
-$ gcloud compute instances create bitwarden \
+$ gcloud compute instances create bitwarden-rs \
     --machine-type f1-micro \
     --zone us-east1-b \
     --image-project cos-cloud \
@@ -40,7 +44,7 @@ $ gcloud compute instances create bitwarden \
     --scopes compute-rw
 ```
 
-You may change the zone to be closer to you or customize the name (`bitwarden`), but most of the other values should remain the same. 
+You may change the zone to be closer to you or customize the name (`bitwarden-rs`), but most of the other values should remain the same. 
 
 ## Step 2: Pull and Configure Project
 
@@ -62,7 +66,14 @@ docker-compose version x.y.z, build abc
 
 ### Configure Environmental Variables with `.env`
 
-I provide `.env.template` which should be copied to `.env` and filled out; filling it out is self-explanitory and requires certain values such as a domain name, Cloudflare API tokens, etc. 
+The provided `.env.template` needs to be updated and copied to `.env` and filled out; filling it out is self-explanitory and requires certain values such as a domain name, Cloudflare API tokens, etc. 
+
+Example:
+```bash
+$ cd bitwarden_gcloud
+$ nano .env.template
+```
+When saving nano (Ctrl+O), you can rename to .env
 
 ### Configure `fail2ban` (_optional_)
 
@@ -73,7 +84,9 @@ bantime = 24h <- how long to enforce the ip ban
 maxretry = 3  <- number of times to retry until a ban occurs
 ```
 
-This will work out of the box - no `fail2ban` configuration is needed unless you want e-mail alerts of bans. To enable this, enter the SMTP settings in `.env`, and follow the instructions in `fail2ban/jail.d/jail.local` by uncommenting and entering `destemail` and `sender` and uncommenting the `action_mwl` action in the `bitwarden` and `bitwarden-admin` jails in the same file.
+This will work out of the box - no `fail2ban` configuration is needed.
+
+If you want to remove e-mail alerts of bans, follow the instructions in `fail2ban/jail.d/jail.local` by commenting (#) and entering `destemail` and `sender` and commenting (#) the `action_mwl` action in the `bitwarden` and `bitwarden-admin` jails in the same file.
 
 ### Configure Country-wide Blocking (_optional_)
 
@@ -81,7 +94,7 @@ The `countryblock` container will block ip addresses from countries specified in
 
 This country-wide blocklist will be updated daily at midnight, but you can change the `COUNTRYBLOCK_SCHEDULE` variable in `.env` to suit your needs. 
 
-These block-lists are pulled from www.ipdeny.com on each update. 
+These block-lists are pulled from [IP Deny](www.ipdeny.com) on each update.
 
 ### Configure Automatic Rebooting After Updates (_optional_)
 
@@ -101,7 +114,7 @@ gcloud compute instances add-metadata <instance> --metadata-from-file startup-sc
 
 You can confirm that your startup script has been added in your instance details under "Custom metadata" on the Compute Engine Console. 
 
-Next, restart your vm with the command `$ sudo reboot`. Once your vm has rebooted, you can confirm that the startup script was run with the command:
+Next, restart your vm with the command `$ sudo shutdown -r 0`. Once your vm has rebooted, you can confirm that the startup script was run with the command:
 
 ```bash
 $ sudo journalctl -u google-startup-scripts.service
@@ -115,14 +128,13 @@ Login to CloudFlare Control Panel and add an A Record for your chosen FQDN for t
 
 https://dash.cloudflare.com/
 
-Perform ping <FQDN> with your local computer and ensure that the returned IP Address is the same as External IP Address within Google Control Panel.
+Perform ping <FQDN> with your local computer and ensure that the returned IP Address is the same as External IP Address within Google Control Panel.  Note you may need to refresh your DNS Cache to ensure the IP is correctly known.
 
 ## Step 4: Start Services
 
-Ensure you are in the necessary location and to start up, use `docker-compose`:
+Ensure you are in the necessary directory (bitwarden_gcloud) and to start up, use `docker-compose`:
 
 ```bash
-cd bitwarden_gcloud
 $ docker-compose up
 ```
 
@@ -130,10 +142,9 @@ You can now use your browser to visit your new Bitwarden site.
 
 ## Step 5: Update DDclient Config
 
-Ensure you are in the necessary location and edit the DDclient Config to auto-update the DNS Record you have created.
+Ensure you are in the necessary directory (bitwarden_gcloud) and edit the DDclient Config to auto-update the DNS Record you have created.
 
 ```bash
-cd bitwarden_gcloud
 $ nano DDclient/ddclient.conf
 ```
 
@@ -164,8 +175,8 @@ docker container ls
 ```
 This should return an output similar to the below:
 
-CONTAINER ID        IMAGE                       COMMAND                  CREATED             STATUS   
-<Container ID>        linuxserver/ddclient        "/init"                  7 hours ago         Up
+CONTAINER ID        IMAGE                      ....
+<Container ID>      linuxserver/ddclient       ...
 
 Obtain the latest log entry using the container ID you found:
 
@@ -191,4 +202,12 @@ gcloud compute resource-policies create snapshot-schedule Bitwarden-RS-WeeklySna
     --on-source-disk-delete apply-retention-policy \
     --snapshot-labels env=dev,media=images \
     --storage-location US
+```
+
+## NOTES
+
+If you need to make a change to the `.env` file and recreate the docker containers which the change affects, use the following docker command from the bitwarden_gcloud directory :
+
+```
+docker-compose up -d
 ```
