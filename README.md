@@ -171,7 +171,7 @@ password=<Global API>  \
 To validate the configuration, confirm the DDclient name:
 
 ```
-docker container ls
+$ docker container ls
 ```
 This should return an output similar to the below:
 
@@ -181,7 +181,7 @@ CONTAINER ID        IMAGE                      ....
 Obtain the latest log entry using the container ID you found:
 
 ```
-docker container logs <Container ID>
+$ docker container logs <Container ID>
 ```
 
 You'll see the following message if everything is working:
@@ -209,5 +209,5 @@ gcloud compute resource-policies create snapshot-schedule Bitwarden-RS-WeeklySna
 If you need to make a change to the `.env` file and recreate the docker containers which the change affects, use the following docker command from the bitwarden_gcloud directory :
 
 ```
-docker-compose up -d
+$ docker-compose up -d
 ```
