@@ -73,7 +73,7 @@ Example:
 $ cd bitwarden_gcloud
 $ nano .env.template
 ```
-When saving nano (Ctrl+O), you can rename to .env
+When saving within nano, you can rename the output to .env
 
 ### Configure `fail2ban` (_optional_)
 
@@ -188,25 +188,34 @@ You'll see the following message if everything is working:
 
 SUCCESS:  <FQDN> -- Updated Successfully to <External IP Address>
 
-## Step 6: Create Weekly Snapshot Schedule to protect VM
+## Step 6: Create Weekly Snapshot Schedule to protect VM: (_optional_)
 
-In the Cloud Shell enter the following command (NOT YET TESTED)
+In the Cloud Shell enter the following command (amend any of the settings like region, if you have located the VM in a different location):
 
 ```
-gcloud compute resource-policies create snapshot-schedule Bitwarden-RS-WeeklySnapshot \
-    --description "Weekly Snapshot for Bitwarden-RS VM" \
+gcloud compute resource-policies create snapshot-schedule weekly-snapshot \
+    --description "Weekly Snapshot - Saturday 01:00" \
     --max-retention-days 7 \
     --start-time 01:00 \
     --weekly-schedule saturday \
     --region us-east1 \
     --on-source-disk-delete apply-retention-policy \
-    --snapshot-labels env=dev,media=images \
     --storage-location US
+```
+
+## Step 7: Assign the Bitwarden_RS Disk to the Snapshot Schedule to Protect the VM: (_optional_)
+
+In the Cloud Shell enter the following command:
+
+```
+gcloud compute disks add-resource-policies bitwarden-rs \
+    --resource-policies weekly-snapshot \
+    --zone us-east1-b
 ```
 
 ## NOTES
 
-If you need to make a change to the `.env` file and recreate the docker containers which the change affects, use the following docker command from the bitwarden_gcloud directory :
+If you need to make a change to the `.env` file and recreate only the docker containers which the changes effect, use the following docker command from the bitwarden_gcloud directory :
 
 ```
 $ docker-compose up -d
