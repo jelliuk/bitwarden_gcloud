@@ -205,7 +205,7 @@ gcloud compute resource-policies create snapshot-schedule weekly-snapshot \
 
 ## Step 7: Assign the Bitwarden_RS Disk to the Snapshot Schedule to Protect the VM: (_optional_)
 
-In the Cloud Shell enter the following command:
+In the Cloud Shell enter the following command (amend any of the settings if you have adjusted values):
 
 ```
 gcloud compute disks add-resource-policies bitwarden-rs \
