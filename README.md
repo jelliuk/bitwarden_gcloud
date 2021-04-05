@@ -168,20 +168,10 @@ password=<Global API>  \
 <FQDN as defined in the .env file>
 ```
 
-To validate the configuration, confirm the DDclient name:
+To validate the configuration:
 
 ```
-$ docker container ls
-```
-This should return an output similar to the below:
-
-CONTAINER ID        IMAGE                      ....
-<Container ID>      linuxserver/ddclient       ...
-
-Obtain the latest log entry using the container ID you found:
-
-```
-$ docker container logs <Container ID>
+$ docker container logs ddclient
 ```
 
 You'll see the following message if everything is working:
