@@ -27,7 +27,7 @@ Before you start, ensure you have the following:
 
 ## Step 1: Set up Google Cloud `f1-micro` Compute Engine Instance
 
-Google Cloud offers an '[always free](https://cloud.google.com/free/)' tier of their Compute Engine with one virtual core and ~600 MB of RAM (about 150 MB free depending on which OS you installed). [Bitwarden RS](https://github.com/dani-garcia/bitwarden_rs) runs well under these constraints; it's written in Rust and an ideal candidate for a micro instance. 
+Google Cloud offers an '[always free](https://cloud.google.com/free/)' tier of their Compute Engine with one virtual core and ~600 MB of RAM (about 150 MB free depending on which OS you installed). [Vaultwarden](https://github.com/dani-garcia/vaultwarden) runs well under these constraints; it's written in Rust and an ideal candidate for a micro instance. 
 
 Go to [Google Compute Engine](https://cloud.google.com/compute) and open a Cloud Shell. You may also create the instance manually following [the constraints of the free tier](https://cloud.google.com/free/docs/gcp-free-tier). 
 
@@ -45,6 +45,12 @@ $ gcloud compute instances create bitwarden-rs \
 ```
 
 You may change the zone to be closer to you or customize the name (`bitwarden-rs`), but most of the other values should remain the same. 
+
+Next, create firewall rules to allow traffic to your VM. Bitwarden only serves encrypted traffic over HTTPS, but port 80 is needed for the Let's Encrypt challenges served by Caddy:
+```bash
+$ gcloud compute firewall-rules create bitwarden-http-ingress --action allow --target-tags http-server --rules tcp:80
+$ gcloud compute firewall-rules create bitwarden-https-ingress --action allow --target-tags https-server --rules tcp:443
+```
 
 ## Step 2: Pull and Configure Project
 
@@ -67,6 +73,8 @@ docker-compose version x.y.z, build abc
 ### Configure Environmental Variables with `.env`
 
 The provided `.env.template` needs to be updated and copied to `.env` and filled out; filling it out is self-explanitory and requires certain values such as a domain name, Cloudflare API tokens, etc. 
+
+Be aware that there is an optional backup section that allows you to have an encrypted backup regularly backed up and emailed or synced to cloud storage. 
 
 Example:
 ```bash
