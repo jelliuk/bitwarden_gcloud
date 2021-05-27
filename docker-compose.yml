@@ -4,15 +4,15 @@ version: '3'
 services:
   bitwarden:
     # Standard Bitwarden is very resource-heavy and cannot run on micro cloud instances
-    # Bitwarden Rust is a Rust (mostly) feature-complete implementation of Bitwarden
-    # https://github.com/dani-garcia/bitwarden_rs
-    image: bitwardenrs/server:alpine
+    # Vaultwarden (formerly Bitwarden_RS) is a Rust (mostly) feature-complete implementation of Bitwarden
+    # https://github.com/dani-garcia/vaultwarden
+    image: vaultwarden/server:alpine
     restart: always
-    container_name: bitwarden
+    container_name: vaultwarden
     volumes:
-    - ${PWD}/bitwarden:/data
+    - ${PWD}/vaultwarden:/data
     environment:
-    - LOG_FILE=/data/bitwarden.log
+    - LOG_FILE=/data/vaultwarden.log
     - WEBSOCKET_ENABLED=true            # required for websockets
     - SHOW_PASSWORD_HINT=false
     - DOMAIN=https://${DOMAIN}          # DOMAIN is set in .env but doesn't have protocol prefix
@@ -54,7 +54,7 @@ services:
     # This provides a ddclient dynamic dns updating cron which is as simple as running it
     # and editing the ddns/config/ddclient.conf file
     # https://github.com/linuxserver/docker-ddclient
-    image: linuxserver/ddclient
+    image: linuxserver/ddclient:latest
     restart: always
     container_name: ddns
     volumes:
@@ -128,7 +128,7 @@ services:
     # Watchtower will pull down your new image, gracefully shut down your existing container 
     # and restart it with the same options that were used when it was deployed initially
     # https://github.com/containrrr/watchtower
-    image: containrrr/watchtower
+    image: containrrr/watchtower:latest
     restart: always
     container_name: watchtower
     volumes:
